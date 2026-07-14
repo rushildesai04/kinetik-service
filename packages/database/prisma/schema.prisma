@@ -1,0 +1,236 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Organizations & Users ───────────────────────────────────────────────
+
+enum UserRole {
+  PATIENT
+  CLINICIAN
+  CLINIC_ADMIN
+}
+
+enum RecoveryPhase {
+  IN_CLINIC_PT
+  POST_DISCHARGE
+  RETURN_TO_SPORT
+  MAINTENANCE
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+model Clinic {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  patients  PatientProfile[]
+  exercises Exercise[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  role         UserRole
+  clinicId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  clinic         Clinic?         @relation(fields: [clinicId], references: [id])
+  patientProfile PatientProfile?
+  clinicianProfile ClinicianProfile?
+}
+
+model ClinicianProfile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  licenseNumber   String?
+  specialty       String?
+  onboardingCode  String  @unique @default(cuid())
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  patients PatientProfile[]  @relation("AssignedClinician")
+}
+
+// ─── Patient Recovery Journey ────────────────────────────────────────────
+
+model PatientProfile {
+  id                String        @id @default(cuid())
+  userId            String        @unique
+  clinicId          String?
+  clinicianId       String?
+  injuryType        String
+  injuryDate        DateTime?
+  sport             String?
+  sportGoal         String?
+  comorbidities     String[]
+  recoveryPhase     RecoveryPhase @default(POST_DISCHARGE)
+  clinicianCodeUsed String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clinic     Clinic?           @relation(fields: [clinicId], references: [id])
+  clinician  ClinicianProfile? @relation("AssignedClinician", fields: [clinicianId], references: [id])
+
+  checkIns          DailyCheckIn[]
+  programs          AssignedProgram[]
+  outcomeSurveys    OutcomeSurvey[]
+  readinessScores   ReadinessScore[]
+  sessionLogs       ExerciseSession[]
+  alerts            Alert[]
+}
+
+// ─── Daily Accountability ──────────────────────────────────────────────────
+
+model DailyCheckIn {
+  id              String   @id @default(cuid())
+  patientId       String
+  date            DateTime @db.Date
+  painScore       Int      // 0-10 validated scale
+  confidenceScore Int      // 0-10 psychological readiness
+  moodNote        String?
+  symptoms        String[]
+  voiceNoteUrl    String?
+  createdAt       DateTime @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@unique([patientId, date])
+}
+
+// ─── Home Exercise Programs ────────────────────────────────────────────────
+
+model Exercise {
+  id           String   @id @default(cuid())
+  clinicId     String?
+  name         String
+  description  String
+  instructions String
+  videoUrl     String?
+  muxAssetId   String?
+  bodyRegion   String
+  difficulty   Int      @default(1) // 1-5
+  isGlobal     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  clinic       Clinic?              @relation(fields: [clinicId], references: [id])
+  programItems ProgramExercise[]
+}
+
+model AssignedProgram {
+  id          String    @id @default(cuid())
+  patientId   String
+  name        String
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  frequency   String    @default("daily") // daily, 3x/week, etc.
+  createdAt   DateTime  @default(now())
+
+  patient  PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  exercises ProgramExercise[]
+}
+
+model ProgramExercise {
+  id          String @id @default(cuid())
+  programId   String
+  exerciseId  String
+  sets        Int    @default(3)
+  reps        Int    @default(10)
+  holdSeconds Int?
+  orderIndex  Int    @default(0)
+  notes       String?
+
+  program  AssignedProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  exercise Exercise        @relation(fields: [exerciseId], references: [id])
+  sessions ExerciseSession[]
+}
+
+model ExerciseSession {
+  id                String    @id @default(cuid())
+  patientId         String
+  programExerciseId String
+  completedAt       DateTime  @default(now())
+  setsCompleted     Int
+  repsCompleted     Int
+  painDuring        Int?      // 0-10 during exercise
+  formScore         Float?    // 0-100 from CV/sensor
+  sensorDataUrl     String?
+  videoRecordingUrl String?
+  notes             String?
+
+  patient         PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  programExercise ProgramExercise @relation(fields: [programExerciseId], references: [id])
+}
+
+// ─── Return-to-Play Readiness ─────────────────────────────────────────────
+
+enum SurveyType {
+  KOOS
+  IKDC
+  CUSTOM
+}
+
+model OutcomeSurvey {
+  id         String     @id @default(cuid())
+  patientId  String
+  surveyType SurveyType
+  scores     Json       // domain scores as structured JSON
+  totalScore Float
+  completedAt DateTime  @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+model ReadinessScore {
+  id              String   @id @default(cuid())
+  patientId       String
+  overallScore    Float    // 0-100 composite
+  physicalScore   Float
+  psychologicalScore Float
+  adherenceScore  Float
+  functionalScore Float
+  recommendation  String   // e.g. "Not ready", "Progressing", "Clear for light activity"
+  calculatedAt    DateTime @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─── Clinician Alerts (low-burden visibility) ───────────────────────────
+
+enum AlertType {
+  MISSED_SESSIONS
+  HIGH_PAIN
+  LOW_ADHERENCE
+  FORM_DEGRADATION
+  READINESS_MILESTONE
+  SURVEY_DUE
+}
+
+model Alert {
+  id        String        @id @default(cuid())
+  patientId String
+  type      AlertType
+  severity  AlertSeverity
+  message   String
+  isRead    Boolean       @default(false)
+  createdAt DateTime      @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}

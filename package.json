@@ -1,0 +1,20 @@
+{
+  "name": "kinetik",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "db:generate": "pnpm --filter @kinetik/database generate",
+    "db:push": "pnpm --filter @kinetik/database push",
+    "db:studio": "pnpm --filter @kinetik/database studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20"
+  }
+}
