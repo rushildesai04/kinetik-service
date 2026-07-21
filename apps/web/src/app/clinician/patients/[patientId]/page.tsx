@@ -52,6 +52,23 @@ interface PatientDetail {
     exercises: Array<{ name: string; sets: number; reps: number; bodyRegion: string }>;
   };
   alerts: Array<{ id: string; type: string; severity: "INFO" | "WARNING" | "CRITICAL"; message: string; isRead: boolean }>;
+  recentSessions: Array<{
+    id: string;
+    exerciseName: string;
+    completedAt: string;
+    durationSeconds?: number;
+    setsCompleted: number;
+    repsCompleted: number;
+    formScore?: number;
+    painDuring?: number;
+  }>;
+}
+
+function formatDuration(seconds?: number) {
+  if (seconds == null) return "—";
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export default function PatientDetailPage() {
@@ -242,6 +259,51 @@ export default function PatientDetailPage() {
                   <Typography color="text.secondary" variant="body2">
                     No active program assigned
                   </Typography>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                  Recent Workout Sessions
+                </Typography>
+                {data.recentSessions.length === 0 ? (
+                  <Typography color="text.secondary" variant="body2">
+                    No completed sessions yet
+                  </Typography>
+                ) : (
+                  <List dense>
+                    {data.recentSessions.map((s) => (
+                      <ListItem key={s.id} disableGutters>
+                        <ListItemText
+                          primary={
+                            <Box display="flex" justifyContent="space-between" gap={1}>
+                              <Typography variant="body2" fontWeight={500}>
+                                {s.exerciseName}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {formatDuration(s.durationSeconds)}
+                              </Typography>
+                            </Box>
+                          }
+                          secondary={
+                            new Date(s.completedAt).toLocaleString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            }) +
+                            ` · ${s.setsCompleted} sets × ${s.repsCompleted} reps` +
+                            (s.formScore != null ? ` · ${Math.round(s.formScore)}% form` : "") +
+                            (s.painDuring != null ? ` · pain ${s.painDuring}/10` : "")
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
                 )}
               </CardContent>
             </Card>

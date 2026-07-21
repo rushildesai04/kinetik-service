@@ -105,6 +105,11 @@ export async function clinicianRoutes(app: FastifyInstance) {
           },
         },
         alerts: { orderBy: { createdAt: "desc" }, take: 10 },
+        sessionLogs: {
+          orderBy: { completedAt: "desc" },
+          take: 15,
+          include: { programExercise: { include: { exercise: true } } },
+        },
       },
     });
 
@@ -150,6 +155,16 @@ export async function clinicianRoutes(app: FastifyInstance) {
             }
           : null,
         alerts: patient.alerts,
+        recentSessions: patient.sessionLogs.map((s) => ({
+          id: s.id,
+          exerciseName: s.programExercise.exercise.name,
+          completedAt: s.completedAt.toISOString(),
+          durationSeconds: s.durationSeconds,
+          setsCompleted: s.setsCompleted,
+          repsCompleted: s.repsCompleted,
+          formScore: s.formScore,
+          painDuring: s.painDuring,
+        })),
       },
     };
   });
