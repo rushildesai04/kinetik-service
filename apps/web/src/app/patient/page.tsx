@@ -155,7 +155,7 @@ export default function PatientDashboard() {
                   icon={<WbSunnyOutlinedIcon />}
                   label="Daily affirmation"
                   size="small"
-                  sx={{ bgcolor: "rgba(0,229,199,0.12)", color: "#00e5c7", border: "none" }}
+                  sx={{ bgcolor: "rgba(0,184,154,0.12)", color: "#00967d", border: "none" }}
                 />
                 <Typography variant="caption" color="text.secondary">
                   {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}

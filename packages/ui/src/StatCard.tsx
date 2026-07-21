@@ -50,7 +50,7 @@ export function StatCard({ title, value, subtitle, icon, gradient }: StatCardPro
           )}
         </Box>
         {icon && (
-          <Box sx={{ color: "#00e5c7", opacity: 0.7 }}>{icon}</Box>
+          <Box sx={{ color: "#00967d", opacity: 0.7 }}>{icon}</Box>
         )}
       </Box>
     </Box>

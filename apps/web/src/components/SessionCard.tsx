@@ -20,19 +20,21 @@ export function SessionCard({
   duration = "12 min",
   schedule = "Today",
   progress,
-  accentColor = "#00e5c7",
+  accentColor = "#00967d",
   onStart,
-  dark = true,
+  dark = false,
 }: SessionCardProps) {
   return (
     <Box
+      className="glass-card"
       sx={{
         borderRadius: "20px",
         p: 2.5,
-        background: dark
-          ? "linear-gradient(145deg, #0f172a 0%, #0a0f1a 100%)"
-          : "rgba(255,255,255,0.04)",
-        border: `1px solid ${dark ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.08)"}`,
+        ...(dark && {
+          background: "linear-gradient(145deg, #0f172a 0%, #0a0f1a 100%)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          color: "#f1f5f9",
+        }),
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",

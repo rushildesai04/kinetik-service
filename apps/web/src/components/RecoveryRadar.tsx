@@ -58,7 +58,7 @@ export function RecoveryRadar({
                 key={l}
                 points={pts}
                 fill="none"
-                stroke="rgba(255,255,255,0.08)"
+                stroke="rgba(15,23,42,0.1)"
                 strokeWidth={1}
               />
             );
@@ -72,7 +72,7 @@ export function RecoveryRadar({
                 y1={center}
                 x2={x}
                 y2={y}
-                stroke="rgba(255,255,255,0.06)"
+                stroke="rgba(15,23,42,0.08)"
                 strokeWidth={1}
               />
             );

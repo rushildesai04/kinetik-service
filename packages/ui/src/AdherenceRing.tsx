@@ -19,7 +19,7 @@ export function AdherenceRing({ rate, streak, size = 120 }: AdherenceRingProps) 
           value={100}
           size={size}
           thickness={3}
-          sx={{ color: "rgba(255,255,255,0.08)" }}
+          sx={{ color: "rgba(15,23,42,0.08)" }}
         />
         <CircularProgress
           variant="determinate"

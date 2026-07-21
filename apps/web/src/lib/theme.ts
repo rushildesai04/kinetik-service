@@ -3,15 +3,15 @@ import { gradients, glass } from "./design";
 
 export const theme = createTheme({
   palette: {
-    mode: "dark",
-    primary: { main: "#00e5c7", light: "#5eead4", dark: "#00b89a" },
+    mode: "light",
+    primary: { main: "#00b89a", light: "#5eead4", dark: "#00967d" },
     secondary: { main: "#6366f1", light: "#818cf8", dark: "#4f46e5" },
     success: { main: "#10b981" },
     warning: { main: "#f59e0b" },
     error: { main: "#ef4444" },
-    info: { main: "#22d3ee" },
-    background: { default: "#060a12", paper: "rgba(255,255,255,0.04)" },
-    text: { primary: "#f1f5f9", secondary: "#94a3b8" },
+    info: { main: "#0891b2" },
+    background: { default: "#f6f8fb", paper: "#ffffff" },
+    text: { primary: "#0f172a", secondary: "#64748b" },
     divider: glass.border,
   },
   typography: {
@@ -28,7 +28,7 @@ export const theme = createTheme({
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        body: { backgroundColor: "#060a12" },
+        body: { backgroundColor: "#f6f8fb" },
       },
     },
     MuiButton: {
@@ -48,10 +48,10 @@ export const theme = createTheme({
         },
         outlined: {
           borderColor: glass.borderAccent,
-          color: "#00e5c7",
+          color: "#00967d",
           "&:hover": {
-            borderColor: "#00e5c7",
-            background: "rgba(0, 229, 199, 0.08)",
+            borderColor: "#00967d",
+            background: "rgba(0, 184, 154, 0.08)",
           },
         },
       },
@@ -70,8 +70,8 @@ export const theme = createTheme({
       styleOverrides: {
         root: { fontWeight: 500 },
         filled: {
-          background: "rgba(0, 229, 199, 0.15)",
-          color: "#00e5c7",
+          background: "rgba(0, 184, 154, 0.12)",
+          color: "#00967d",
         },
         outlined: {
           borderColor: glass.border,
@@ -83,20 +83,20 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           "& .MuiOutlinedInput-root": {
-            background: "rgba(255,255,255,0.03)",
+            background: "rgba(15,23,42,0.02)",
             borderRadius: 12,
             "& fieldset": { borderColor: glass.border },
-            "&:hover fieldset": { borderColor: "rgba(0,229,199,0.3)" },
-            "&.Mui-focused fieldset": { borderColor: "#00e5c7" },
+            "&:hover fieldset": { borderColor: "rgba(0,184,154,0.4)" },
+            "&.Mui-focused fieldset": { borderColor: "#00967d" },
           },
         },
       },
     },
     MuiSlider: {
       styleOverrides: {
-        root: { color: "#00e5c7" },
+        root: { color: "#00967d" },
         thumb: {
-          boxShadow: "0 0 12px rgba(0,229,199,0.5)",
+          boxShadow: "0 0 12px rgba(0,229,199,0.4)",
         },
       },
     },
@@ -104,7 +104,7 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           borderRadius: 8,
-          backgroundColor: "rgba(255,255,255,0.08)",
+          backgroundColor: "rgba(15,23,42,0.08)",
         },
         bar: {
           borderRadius: 8,
@@ -115,8 +115,8 @@ export const theme = createTheme({
     MuiCheckbox: {
       styleOverrides: {
         root: {
-          color: "#64748b",
-          "&.Mui-checked": { color: "#00e5c7" },
+          color: "#94a3b8",
+          "&.Mui-checked": { color: "#00967d" },
         },
       },
     },

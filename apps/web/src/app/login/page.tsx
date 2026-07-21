@@ -99,7 +99,7 @@ export default function LoginPage() {
           </form>
           <Typography variant="body2" textAlign="center" mt={3} color="text.secondary">
             New patient?{" "}
-            <MuiLink component={Link} href="/onboard" sx={{ color: "#00e5c7" }}>
+            <MuiLink component={Link} href="/onboard" sx={{ color: "#00967d" }}>
               Activate with clinician code
             </MuiLink>
           </Typography>
