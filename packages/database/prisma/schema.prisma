@@ -169,6 +169,7 @@ model ExerciseSession {
   completedAt       DateTime  @default(now())
   setsCompleted     Int
   repsCompleted     Int
+  durationSeconds   Int?      // wall-clock time spent on this exercise
   painDuring        Int?      // 0-10 during exercise
   formScore         Float?    // 0-100 from CV/sensor
   sensorDataUrl     String?

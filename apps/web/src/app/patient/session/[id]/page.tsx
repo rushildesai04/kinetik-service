@@ -71,6 +71,7 @@ export default function SessionPage() {
           programExerciseId,
           setsCompleted: exercise.sets,
           repsCompleted: Math.max(reps, exercise.reps),
+          durationSeconds: seconds,
           formScore,
         }),
       });
