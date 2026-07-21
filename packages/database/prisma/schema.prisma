@@ -94,6 +94,7 @@ model PatientProfile {
   readinessScores   ReadinessScore[]
   sessionLogs       ExerciseSession[]
   alerts            Alert[]
+  workoutFeedback   WorkoutFeedback[]
 }
 
 // ─── Daily Accountability ──────────────────────────────────────────────────
@@ -209,6 +210,19 @@ model ReadinessScore {
   functionalScore Float
   recommendation  String   // e.g. "Not ready", "Progressing", "Clear for light activity"
   calculatedAt    DateTime @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─── Post-Workout Feedback ───────────────────────────────────────────────
+
+model WorkoutFeedback {
+  id          String   @id @default(cuid())
+  patientId   String
+  painScore   Int      // 0-10, pain during/after the workout
+  difficulty  Int      // 0-10, perceived difficulty
+  comments    String?
+  submittedAt DateTime @default(now())
 
   patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
 }

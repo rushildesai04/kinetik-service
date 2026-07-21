@@ -89,10 +89,11 @@ export default function SessionPage() {
     }
     const targetReps = exercise ? exercise.sets * exercise.reps : 0;
     setReps((r) => {
-      const next = Math.min(r + 1, targetReps);
-      if (next >= targetReps) {
-        setFeedback("Target reps reached — tap ✓ to complete session.");
-        setActive(false);
+      const next = r + 1;
+      if (next === targetReps) {
+        setFeedback("Goal reached! Keep going if you've got more in you, or tap ✓ to finish.");
+      } else if (next > targetReps) {
+        setFeedback("Bonus rep — nice. Tap ✓ whenever you're ready to finish.");
       } else {
         setFeedback(next % 5 === 0 ? "Great form! Keep that tempo." : "Good rep — control the movement.");
       }
@@ -152,8 +153,11 @@ export default function SessionPage() {
           <Typography variant="subtitle1" fontWeight={700}>
             {exercise.name}
           </Typography>
-          <Typography variant="caption" color="text.secondary">
+          <Typography variant="caption" color="text.secondary" display="block">
             {exercise.description}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "#00967d", fontWeight: 600 }}>
+            Goal: {exercise.sets} × {exercise.reps} ({targetReps} reps total)
           </Typography>
         </Box>
         <BluetoothIcon sx={{ color: active ? "#00967d" : "#94a3b8", fontSize: 20 }} titleAccess="Sensor connection simulated" />
@@ -215,10 +219,10 @@ export default function SessionPage() {
             />
           ))}
           <Typography variant="caption" color="text.secondary" textAlign="center">
-            {active ? "Tap to count rep" : "Movement tracking"}
+            {active ? "Tap to count rep" : "Press play to start"}
             <br />
             <Box component="span" sx={{ color: "#00967d", fontWeight: 600 }}>
-              {active ? `${reps}/${targetReps} reps` : "Press play to start"}
+              {reps}/{targetReps} reps
             </Box>
           </Typography>
         </Box>

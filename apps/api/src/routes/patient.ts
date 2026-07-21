@@ -31,6 +31,12 @@ const chatSchema = z.object({
   message: z.string().min(1).max(1000),
 });
 
+const workoutFeedbackSchema = z.object({
+  painScore: z.number().min(0).max(10),
+  difficulty: z.number().min(0).max(10),
+  comments: z.string().max(1000).optional(),
+});
+
 async function buildDashboard(profileId: string) {
   const profile = await prisma.patientProfile.findUnique({
     where: { id: profileId },
@@ -254,6 +260,39 @@ export async function patientRoutes(app: FastifyInstance) {
 
     await calculateReadiness(profile.id);
     return reply.status(201).send({ data: session });
+  });
+
+  app.post("/workout-feedback", async (request, reply) => {
+    const { id, role } = request.user as { id: string; role: string };
+    if (role !== "PATIENT") return reply.status(403).send({ error: "Patients only" });
+
+    const body = workoutFeedbackSchema.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: body.error.flatten() });
+
+    const profile = await prisma.patientProfile.findUnique({ where: { userId: id } });
+    if (!profile) return reply.status(404).send({ error: "Profile not found" });
+
+    const feedback = await prisma.workoutFeedback.create({
+      data: {
+        patientId: profile.id,
+        painScore: body.data.painScore,
+        difficulty: body.data.difficulty,
+        comments: body.data.comments,
+      },
+    });
+
+    if (body.data.painScore >= 7) {
+      await prisma.alert.create({
+        data: {
+          patientId: profile.id,
+          type: "HIGH_PAIN",
+          severity: body.data.painScore >= 9 ? "CRITICAL" : "WARNING",
+          message: `Patient reported pain score of ${body.data.painScore}/10 after completing a workout.`,
+        },
+      });
+    }
+
+    return reply.status(201).send({ data: feedback });
   });
 
   app.get("/readiness", async (request, reply) => {

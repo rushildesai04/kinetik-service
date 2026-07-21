@@ -1,5 +1,6 @@
 export { PainScoreSlider } from "./PainScoreSlider";
 export { ConfidenceScoreSlider } from "./ConfidenceScoreSlider";
+export { DifficultyScoreSlider } from "./DifficultyScoreSlider";
 export { AdherenceRing } from "./AdherenceRing";
 export { ReadinessGauge } from "./ReadinessGauge";
 export { ExerciseCard } from "./ExerciseCard";

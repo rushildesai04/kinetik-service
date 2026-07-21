@@ -62,6 +62,13 @@ interface PatientDetail {
     formScore?: number;
     painDuring?: number;
   }>;
+  recentWorkoutFeedback: Array<{
+    id: string;
+    painScore: number;
+    difficulty: number;
+    comments?: string;
+    submittedAt: string;
+  }>;
 }
 
 function formatDuration(seconds?: number) {
@@ -299,6 +306,42 @@ export default function PatientDetailPage() {
                             ` · ${s.setsCompleted} sets × ${s.repsCompleted} reps` +
                             (s.formScore != null ? ` · ${Math.round(s.formScore)}% form` : "") +
                             (s.painDuring != null ? ` · pain ${s.painDuring}/10` : "")
+                          }
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Typography variant="subtitle1" fontWeight={600} mb={2}>
+                  Post-Workout Feedback
+                </Typography>
+                {data.recentWorkoutFeedback.length === 0 ? (
+                  <Typography color="text.secondary" variant="body2">
+                    No post-workout feedback submitted yet
+                  </Typography>
+                ) : (
+                  <List dense>
+                    {data.recentWorkoutFeedback.map((f) => (
+                      <ListItem key={f.id} disableGutters alignItems="flex-start">
+                        <ListItemText
+                          primary={`Pain ${f.painScore}/10 · Difficulty ${f.difficulty}/10`}
+                          secondary={
+                            <>
+                              {new Date(f.submittedAt).toLocaleString(undefined, {
+                                month: "short",
+                                day: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                              {f.comments ? ` — "${f.comments}"` : ""}
+                            </>
                           }
                         />
                       </ListItem>

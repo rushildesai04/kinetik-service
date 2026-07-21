@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Typography, LinearProgress, Chip, Grid, Alert } from "@mui/material";
+import { Box, Typography, LinearProgress, Chip, Grid, Alert, Button } from "@mui/material";
 import { ExerciseCard } from "@kinetik/ui";
 import { api, getStoredToken } from "@/lib/api";
 import { PatientShell } from "@/components/PatientShell";
@@ -185,6 +185,15 @@ export default function PlanPage() {
               </Grid>
             )}
           </Grid>
+
+          <Box mt={3} textAlign="center">
+            <Typography variant="body2" color="text.secondary" mb={1.5}>
+              Done for today? You can wrap up early or after doing extra — every workout counts.
+            </Typography>
+            <Button variant="contained" size="large" onClick={() => router.push("/patient/workout-complete")}>
+              Complete Workout
+            </Button>
+          </Box>
         </Grid>
       </Grid>
     </PatientShell>
