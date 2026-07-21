@@ -99,12 +99,12 @@ export default function OnboardPage() {
                 py: 1.5,
                 mb: 2.5,
                 borderRadius: "12px",
-                bgcolor: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: "#f1f5f9",
+                bgcolor: "rgba(15,23,42,0.02)",
+                border: "1px solid rgba(15,23,42,0.1)",
+                color: "#0f172a",
                 "&.Mui-focused": {
-                  borderColor: "#00e5c7",
-                  boxShadow: "0 0 0 3px rgba(0,229,199,0.12)",
+                  borderColor: "#00967d",
+                  boxShadow: "0 0 0 3px rgba(0,184,154,0.12)",
                 },
               }}
               startAdornment={

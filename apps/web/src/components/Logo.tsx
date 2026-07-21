@@ -31,7 +31,7 @@ export function Logo({ size = "md", showTagline = false }: LogoProps) {
               width: iconSize * 0.45,
               height: iconSize * 0.45,
               borderRadius: "50%",
-              bgcolor: "#060a12",
+              bgcolor: "#f6f8fb",
             }}
           />
         </Box>
@@ -41,7 +41,7 @@ export function Logo({ size = "md", showTagline = false }: LogoProps) {
             fontWeight: 700,
             fontSize,
             letterSpacing: "-0.02em",
-            background: "linear-gradient(135deg, #f1f5f9, #94a3b8)",
+            background: "linear-gradient(135deg, #0f172a, #475569)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
           }}

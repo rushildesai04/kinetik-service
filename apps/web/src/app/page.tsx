@@ -48,7 +48,7 @@ export default function LandingPage() {
           </Box>
           <Typography
             variant="overline"
-            sx={{ color: "#00e5c7", letterSpacing: "0.2em", fontWeight: 600 }}
+            sx={{ color: "#00967d", letterSpacing: "0.2em", fontWeight: 600 }}
           >
             KINETIK TECHNOLOGIES
           </Typography>

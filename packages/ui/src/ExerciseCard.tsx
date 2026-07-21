@@ -99,7 +99,7 @@ export function ExerciseCard({
               <Chip
                 label={`${sets}×${reps}${holdSeconds ? ` · ${holdSeconds}s hold` : ""}`}
                 size="small"
-                sx={{ bgcolor: "rgba(255,255,255,0.06)", color: "text.secondary", fontSize: "0.7rem" }}
+                sx={{ bgcolor: "rgba(15,23,42,0.06)", color: "text.secondary", fontSize: "0.7rem" }}
               />
               {isCompleted && (
                 <Chip label="Done today" size="small" sx={{ bgcolor: "#10b98120", color: "#10b981" }} />
@@ -111,7 +111,7 @@ export function ExerciseCard({
                   sx={{
                     height: 4,
                     borderRadius: 2,
-                    bgcolor: "rgba(255,255,255,0.08)",
+                    bgcolor: "rgba(15,23,42,0.08)",
                     overflow: "hidden",
                   }}
                 >
@@ -137,7 +137,7 @@ export function ExerciseCard({
             size="small"
             fullWidth
             onClick={onComplete}
-            sx={{ mt: 2, borderColor: "rgba(255,255,255,0.12)" }}
+            sx={{ mt: 2, borderColor: "rgba(15,23,42,0.15)" }}
           >
             Log as complete
           </Button>

@@ -23,8 +23,8 @@ export function PatientSidebar() {
         alignSelf: "flex-start",
         py: 3,
         px: 2,
-        borderRight: "1px solid rgba(255,255,255,0.08)",
-        bgcolor: "rgba(6, 10, 18, 0.6)",
+        borderRight: "1px solid rgba(15,23,42,0.08)",
+        bgcolor: "rgba(255, 255, 255, 0.6)",
         backdropFilter: "blur(20px)",
       }}
     >
@@ -48,13 +48,13 @@ export function PatientSidebar() {
                 py: 1.25,
                 borderRadius: 2,
                 cursor: "pointer",
-                color: active ? "#00e5c7" : "#94a3b8",
-                bgcolor: active ? "rgba(0, 229, 199, 0.1)" : "transparent",
-                border: active ? "1px solid rgba(0,229,199,0.2)" : "1px solid transparent",
+                color: active ? "#00967d" : "#64748b",
+                bgcolor: active ? "rgba(0, 184, 154, 0.1)" : "transparent",
+                border: active ? "1px solid rgba(0,184,154,0.2)" : "1px solid transparent",
                 transition: "all 0.2s",
                 "&:hover": {
-                  bgcolor: active ? "rgba(0, 229, 199, 0.1)" : "rgba(255,255,255,0.04)",
-                  color: active ? "#00e5c7" : "#f1f5f9",
+                  bgcolor: active ? "rgba(0, 184, 154, 0.1)" : "rgba(15,23,42,0.04)",
+                  color: active ? "#00967d" : "#0f172a",
                 },
               }}
             >

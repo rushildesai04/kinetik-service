@@ -58,7 +58,7 @@ export function ReadinessGauge({ score, recommendation, showBreakdown }: Readine
         sx={{
           height: 10,
           borderRadius: 5,
-          bgcolor: "rgba(255,255,255,0.08)",
+          bgcolor: "rgba(15,23,42,0.08)",
           overflow: "hidden",
           mb: 2,
         }}

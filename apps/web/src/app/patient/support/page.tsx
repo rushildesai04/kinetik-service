@@ -114,11 +114,11 @@ export default function SupportPage() {
                   fontSize: "0.8rem",
                   cursor: loading ? "not-allowed" : "pointer",
                   opacity: loading ? 0.6 : 1,
-                  bgcolor: "rgba(255,255,255,0.04)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  bgcolor: "rgba(15,23,42,0.03)",
+                  border: "1px solid rgba(15,23,42,0.08)",
                   color: "text.secondary",
                   mb: { md: 1 },
-                  "&:hover": { borderColor: "rgba(0,229,199,0.3)", color: "#00e5c7" },
+                  "&:hover": { borderColor: "rgba(0,184,154,0.4)", color: "#00967d" },
                 }}
               >
                 {s}
@@ -159,7 +159,7 @@ export default function SupportPage() {
               ))}
               {loading && (
                 <Box display="flex" alignItems="center" gap={1} px={1}>
-                  <CircularProgress size={16} sx={{ color: "#00e5c7" }} />
+                  <CircularProgress size={16} sx={{ color: "#00967d" }} />
                   <Typography variant="caption" color="text.secondary">
                     Analyzing your recovery data...
                   </Typography>
@@ -179,7 +179,7 @@ export default function SupportPage() {
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 99,
-                    bgcolor: "rgba(255,255,255,0.04)",
+                    bgcolor: "rgba(15,23,42,0.02)",
                   },
                 }}
               />

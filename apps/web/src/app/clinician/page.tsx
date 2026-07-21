@@ -172,12 +172,12 @@ export default function ClinicianDashboard() {
                 </Typography>
               ) : (
                 data.alerts.slice(0, 8).map((alert) => (
-                  <Box key={alert.id} mb={2} pb={2} borderBottom="1px solid rgba(255,255,255,0.06)">
+                  <Box key={alert.id} mb={2} pb={2} borderBottom="1px solid rgba(15,23,42,0.08)">
                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                       <Typography
                         variant="subtitle2"
                         fontWeight={600}
-                        sx={{ cursor: "pointer", "&:hover": { color: "#00e5c7" } }}
+                        sx={{ cursor: "pointer", "&:hover": { color: "#00967d" } }}
                         onClick={() => router.push(`/clinician/patients/${alert.patientId}`)}
                       >
                         {alert.patientName}
@@ -191,7 +191,7 @@ export default function ClinicianDashboard() {
                       <Button
                         size="small"
                         variant="text"
-                        sx={{ fontSize: "0.7rem", color: "#00e5c7" }}
+                        sx={{ fontSize: "0.7rem", color: "#00967d" }}
                         onClick={() => router.push(`/clinician/patients/${alert.patientId}`)}
                       >
                         View patient

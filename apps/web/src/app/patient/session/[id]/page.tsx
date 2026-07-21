@@ -112,7 +112,7 @@ export default function SessionPage() {
 
   if (notFound) {
     return (
-      <Box minHeight="100vh" display="flex" flexDirection="column" alignItems="center" justifyContent="center" bgcolor="#060a12" px={3}>
+      <Box minHeight="100vh" display="flex" flexDirection="column" alignItems="center" justifyContent="center" bgcolor="#f6f8fb" px={3}>
         <Alert severity="warning" sx={{ mb: 3, maxWidth: 400 }}>
           Exercise not found in today&apos;s program.
         </Alert>
@@ -125,7 +125,7 @@ export default function SessionPage() {
 
   if (!exercise) {
     return (
-      <Box minHeight="100vh" display="flex" alignItems="center" justifyContent="center" bgcolor="#060a12">
+      <Box minHeight="100vh" display="flex" alignItems="center" justifyContent="center" bgcolor="#f6f8fb">
         <Typography color="text.secondary">Loading session...</Typography>
       </Box>
     );
@@ -138,7 +138,7 @@ export default function SessionPage() {
     <Box
       minHeight="100vh"
       sx={{
-        background: "radial-gradient(ellipse at center, #0f1a2e 0%, #060a12 70%)",
+        background: "radial-gradient(ellipse at center, #eef9f6 0%, #f6f8fb 70%)",
         display: "flex",
         flexDirection: "column",
       }}
@@ -155,7 +155,7 @@ export default function SessionPage() {
             {exercise.description}
           </Typography>
         </Box>
-        <BluetoothIcon sx={{ color: active ? "#00e5c7" : "#475569", fontSize: 20 }} titleAccess="Sensor connection simulated" />
+        <BluetoothIcon sx={{ color: active ? "#00967d" : "#94a3b8", fontSize: 20 }} titleAccess="Sensor connection simulated" />
       </Box>
 
       <Box flex={1} display="flex" alignItems="center" justifyContent="center" position="relative" px={3}>
@@ -167,11 +167,11 @@ export default function SessionPage() {
             px: 1.5,
             py: 1,
             borderRadius: 2,
-            bgcolor: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            bgcolor: "rgba(15,23,42,0.03)",
+            border: "1px solid rgba(15,23,42,0.08)",
           }}
         >
-          <Typography variant="caption" color="#00e5c7" fontWeight={600}>
+          <Typography variant="caption" color="#00967d" fontWeight={600}>
             {formLabel}
           </Typography>
         </Box>
@@ -216,7 +216,7 @@ export default function SessionPage() {
           <Typography variant="caption" color="text.secondary" textAlign="center">
             {active ? "Tap to count rep" : "Movement tracking"}
             <br />
-            <Box component="span" sx={{ color: "#00e5c7", fontWeight: 600 }}>
+            <Box component="span" sx={{ color: "#00967d", fontWeight: 600 }}>
               {active ? `${reps}/${targetReps} reps` : "Press play to start"}
             </Box>
           </Typography>
@@ -235,7 +235,7 @@ export default function SessionPage() {
           </Box>
           <Box textAlign="center">
             <Typography variant="caption" color="text.secondary">FORM</Typography>
-            <Typography variant="h6" fontWeight={700} color="#00e5c7">{formScore}%</Typography>
+            <Typography variant="h6" fontWeight={700} color="#00967d">{formScore}%</Typography>
           </Box>
         </Box>
 
@@ -255,7 +255,7 @@ export default function SessionPage() {
         </Box>
 
         <Box display="flex" justifyContent="center" alignItems="center" gap={3} pb={4}>
-          <IconButton onClick={resetSession} sx={{ width: 48, height: 48, bgcolor: "rgba(255,255,255,0.06)", color: "#94a3b8" }}>
+          <IconButton onClick={resetSession} sx={{ width: 48, height: 48, bgcolor: "rgba(15,23,42,0.05)", color: "#64748b" }}>
             <ReplayIcon />
           </IconButton>
           <IconButton
@@ -280,8 +280,8 @@ export default function SessionPage() {
             sx={{
               width: 48,
               height: 48,
-              bgcolor: "rgba(255,255,255,0.06)",
-              color: reps > 0 ? "#10b981" : "#475569",
+              bgcolor: "rgba(15,23,42,0.05)",
+              color: reps > 0 ? "#10b981" : "#cbd5e1",
             }}
           >
             <CheckIcon />

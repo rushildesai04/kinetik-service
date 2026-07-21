@@ -23,9 +23,9 @@ export function PatientNav() {
         py: 1,
         px: 1,
         pb: "max(8px, env(safe-area-inset-bottom))",
-        background: "rgba(6, 10, 18, 0.92)",
+        background: "rgba(255, 255, 255, 0.92)",
         backdropFilter: "blur(20px)",
-        borderTop: "1px solid rgba(255,255,255,0.08)",
+        borderTop: "1px solid rgba(15,23,42,0.08)",
       }}
     >
       {patientNavItems.map(({ label, href, icon: Icon }) => {
@@ -44,9 +44,9 @@ export function PatientNav() {
               px: 1.5,
               borderRadius: 2,
               cursor: "pointer",
-              color: active ? "#00e5c7" : "#64748b",
+              color: active ? "#00967d" : "#64748b",
               transition: "color 0.2s",
-              "&:hover": { color: active ? "#00e5c7" : "#94a3b8" },
+              "&:hover": { color: active ? "#00967d" : "#334155" },
             }}
           >
             <Icon sx={{ fontSize: 22 }} />

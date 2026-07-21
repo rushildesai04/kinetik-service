@@ -95,15 +95,14 @@ export default function PlanPage() {
       <Grid container spacing={{ xs: 2, md: 2.5, lg: 3 }}>
         <Grid item xs={12} lg={4}>
           <Box
+            className="glass-card"
             sx={{
               borderRadius: "20px",
               p: 3,
               height: "100%",
-              background: "linear-gradient(180deg, #0f172a 0%, rgba(15,23,42,0.6) 100%)",
-              border: "1px solid rgba(255,255,255,0.06)",
             }}
           >
-            <Typography variant="overline" sx={{ color: "#00e5c7", fontSize: "0.65rem" }}>
+            <Typography variant="overline" sx={{ color: "#00967d", fontSize: "0.65rem" }}>
               Your care team
             </Typography>
             <Typography variant="h6" fontWeight={700} mb={0.5}>
@@ -113,8 +112,8 @@ export default function PlanPage() {
               {data.clinician?.specialty ?? "Sports Medicine"} · Kinetik Recovery Program
             </Typography>
 
-            <GlassCard sx={{ p: 2, bgcolor: "rgba(0,0,0,0.2)", mb: 2 }}>
-              <Chip label="Diagnosis" size="small" sx={{ mb: 1, bgcolor: "rgba(0,229,199,0.15)", color: "#00e5c7" }} />
+            <GlassCard sx={{ p: 2, bgcolor: "rgba(15,23,42,0.03)", mb: 2 }}>
+              <Chip label="Diagnosis" size="small" sx={{ mb: 1, bgcolor: "rgba(0,184,154,0.12)", color: "#00967d" }} />
               <Typography variant="body2" fontWeight={600} mb={2}>
                 {data.injuryType}
                 {data.sport ? ` · ${data.sport}` : ""}

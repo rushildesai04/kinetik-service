@@ -25,6 +25,7 @@ export function PerformanceBanner({
         position: "relative",
         overflow: "hidden",
         boxShadow: "0 8px 40px rgba(0, 229, 199, 0.25)",
+        color: "#ffffff",
         height: "100%",
         display: "flex",
         flexDirection: "column",

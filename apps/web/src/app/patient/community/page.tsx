@@ -77,10 +77,10 @@ export default function CommunityPage() {
               onChange={handleRadiusChange}
               size="small"
               fullWidth
-              sx={{ "& .MuiToggleButton-root": { color: "text.secondary", borderColor: "rgba(255,255,255,0.1)" } }}
+              sx={{ "& .MuiToggleButton-root": { color: "text.secondary", borderColor: "rgba(15,23,42,0.12)" } }}
             >
               {[5, 10, 25].map((r) => (
-                <ToggleButton key={r} value={r} sx={{ "&.Mui-selected": { color: "#00e5c7", bgcolor: "rgba(0,229,199,0.12)" } }}>
+                <ToggleButton key={r} value={r} sx={{ "&.Mui-selected": { color: "#00967d", bgcolor: "rgba(0,184,154,0.12)" } }}>
                   {r} mi
                 </ToggleButton>
               ))}
@@ -136,7 +136,7 @@ export default function CommunityPage() {
                 borderRadius: 2,
                 background: shareLocation
                   ? "linear-gradient(135deg, rgba(0,229,199,0.15), rgba(99,102,241,0.1))"
-                  : "rgba(255,255,255,0.04)",
+                  : "rgba(15,23,42,0.03)",
                 position: "relative",
                 overflow: "hidden",
                 display: "flex",
@@ -218,7 +218,7 @@ export default function CommunityPage() {
                             height: 10,
                             borderRadius: "50%",
                             bgcolor: a.active ? "#10b981" : "#f59e0b",
-                            border: "2px solid #060a12",
+                            border: "2px solid #ffffff",
                           }}
                         />
                       </Box>

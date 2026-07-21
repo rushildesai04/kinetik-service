@@ -157,8 +157,8 @@ export default function MetricsPage() {
                         px: 2,
                         py: 1,
                         borderRadius: 2,
-                        bgcolor: "rgba(255,255,255,0.04)",
-                        border: "1px solid rgba(255,255,255,0.08)",
+                        bgcolor: "rgba(15,23,42,0.03)",
+                        border: "1px solid rgba(15,23,42,0.08)",
                         textAlign: "center",
                         minWidth: 80,
                       }}
@@ -166,7 +166,7 @@ export default function MetricsPage() {
                       <Typography variant="caption" color="text.secondary" display="block">
                         {new Date(entry.calculatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </Typography>
-                      <Typography variant="subtitle2" fontWeight={700} color="#00e5c7">
+                      <Typography variant="subtitle2" fontWeight={700} color="#00967d">
                         {Math.round(entry.overallScore)}
                       </Typography>
                     </Box>
@@ -180,7 +180,6 @@ export default function MetricsPage() {
             <GlassCard
               sx={{
                 p: 3,
-                background: "linear-gradient(145deg, #0f172a, #0a0f1a)",
                 display: "flex",
                 flexDirection: { xs: "column", md: "row" },
                 alignItems: { md: "center" },
