@@ -3,7 +3,7 @@ services:
     name: kinetik-api
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @kinetik/database generate && pnpm turbo run build --filter=@kinetik/api...
+    buildCommand: npm install -g pnpm@9.15.0 && pnpm install --frozen-lockfile && pnpm --filter @kinetik/database generate && pnpm turbo run build --filter=@kinetik/api...
     startCommand: pnpm --filter @kinetik/api start
     healthCheckPath: /health
     envVars:
@@ -18,7 +18,7 @@ services:
     name: kinetik-web
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@kinetik/web...
+    buildCommand: npm install -g pnpm@9.15.0 && pnpm install --frozen-lockfile && pnpm turbo run build --filter=@kinetik/web...
     startCommand: pnpm --filter @kinetik/web start
     envVars:
       - key: NEXT_PUBLIC_API_URL
