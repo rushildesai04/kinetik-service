@@ -1,10 +1,11 @@
 "use client";
 
-import { Box, Container, Typography, Button, Stack } from "@mui/material";
+import { Box, Container, Typography, Button, Stack, Chip } from "@mui/material";
 import FitnessCenterIcon from "@mui/icons-material/FitnessCenter";
 import MonitorHeartIcon from "@mui/icons-material/MonitorHeart";
 import PsychologyIcon from "@mui/icons-material/Psychology";
 import VisibilityIcon from "@mui/icons-material/Visibility";
+import IntegrationInstructionsIcon from "@mui/icons-material/IntegrationInstructions";
 import Link from "next/link";
 import { MeshBackground } from "@/components/MeshBackground";
 import { Logo } from "@/components/Logo";
@@ -120,6 +121,31 @@ export default function LandingPage() {
             </GlassCard>
           ))}
         </Box>
+
+        <GlassCard glow sx={{ p: { xs: 3, md: 4 }, textAlign: "center", mb: 6 }}>
+          <Box display="flex" justifyContent="center" mb={1.5}>
+            <IntegrationInstructionsIcon sx={{ color: "#00967d", fontSize: 32 }} />
+          </Box>
+          <Typography variant="h5" fontWeight={800} mb={1} sx={{ letterSpacing: "-0.01em" }}>
+            Built to fit into the workflow clinics already have
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{ maxWidth: 480, mx: "auto", mb: 3, lineHeight: 1.6 }}
+          >
+            Kinetik is designed to connect directly with the EHR and Practice Management
+            systems clinics already run on — no extra data entry, no workflow disruption.
+          </Typography>
+          <Stack direction="row" spacing={1.5} justifyContent="center" flexWrap="wrap" useFlexGap>
+            <Chip label="Epic" variant="outlined" />
+            <Chip label="athenahealth" variant="outlined" />
+            <Chip label="Practice Fusion" variant="outlined" />
+          </Stack>
+          <Typography variant="caption" color="text.secondary" display="block" mt={2} sx={{ opacity: 0.8 }}>
+            Integrations in active development
+          </Typography>
+        </GlassCard>
 
         <Typography variant="body2" textAlign="center" color="text.secondary" sx={{ opacity: 0.6 }}>
           HIPAA-compliant · Built for athletes · Trusted by clinicians

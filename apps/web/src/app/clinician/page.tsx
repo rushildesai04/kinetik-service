@@ -8,6 +8,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import CheckIcon from "@mui/icons-material/Check";
+import IntegrationInstructionsIcon from "@mui/icons-material/IntegrationInstructions";
 import { StatCard, PatientRow, AlertChip } from "@kinetik/ui";
 import { api, getStoredToken, clearAuth } from "@/lib/api";
 import { MeshBackground } from "@/components/MeshBackground";
@@ -117,6 +118,50 @@ export default function ClinicianDashboard() {
         <Typography variant="h4" fontWeight={800} mb={3} sx={{ letterSpacing: "-0.02em" }}>
           Patient Overview
         </Typography>
+
+        <GlassCard
+          sx={{
+            p: 2.5,
+            mb: 3,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 2,
+          }}
+        >
+          <Box display="flex" alignItems="center" gap={2}>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "linear-gradient(135deg, #00e5c7, #6366f1)",
+              }}
+            >
+              <IntegrationInstructionsIcon sx={{ color: "#fff" }} />
+            </Box>
+            <Box>
+              <Typography variant="subtitle1" fontWeight={700}>
+                Connect your EHR / PMS
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Sync rosters and notes with Epic, athenahealth, Practice Fusion & more
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="contained"
+            startIcon={<IntegrationInstructionsIcon />}
+            onClick={() => router.push("/clinician/integrations")}
+          >
+            Connect
+          </Button>
+        </GlassCard>
 
         <Grid container spacing={2} sx={{ mb: 4 }}>
           <Grid item xs={6} sm={3}>
