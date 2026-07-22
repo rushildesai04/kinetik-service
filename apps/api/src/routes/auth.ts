@@ -9,6 +9,28 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
+const DEMO_RESET_EMAIL = "sue.smith@kinetik.demo";
+
+async function resetDemoDayIfNeeded(userId: string, email: string, role: string) {
+  if (email !== DEMO_RESET_EMAIL || role !== "PATIENT") return;
+
+  const profile = await prisma.patientProfile.findUnique({ where: { userId } });
+  if (!profile) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  await prisma.exerciseSession.deleteMany({
+    where: { patientId: profile.id, completedAt: { gte: today } },
+  });
+  await prisma.dailyCheckIn.deleteMany({
+    where: { patientId: profile.id, date: today },
+  });
+  await prisma.workoutFeedback.deleteMany({
+    where: { patientId: profile.id, submittedAt: { gte: today } },
+  });
+}
+
 const onboardSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -32,6 +54,8 @@ export async function authRoutes(app: FastifyInstance) {
     if (!user || !(await bcrypt.compare(body.data.password, user.passwordHash))) {
       return reply.status(401).send({ error: "Invalid email or password" });
     }
+
+    await resetDemoDayIfNeeded(user.id, user.email, user.role);
 
     const token = app.jwt.sign({
       id: user.id,
