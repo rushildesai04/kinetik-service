@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Box, Typography, IconButton, Button, Alert } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -8,8 +8,10 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import PauseIcon from "@mui/icons-material/Pause";
 import ReplayIcon from "@mui/icons-material/Replay";
 import CheckIcon from "@mui/icons-material/Check";
-import BluetoothIcon from "@mui/icons-material/Bluetooth";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import { api, getStoredToken } from "@/lib/api";
+import type { PoseLandmarker as PoseLandmarkerType } from "@mediapipe/tasks-vision";
 
 interface ExerciseInfo {
   name: string;
@@ -17,6 +19,31 @@ interface ExerciseInfo {
   sets: number;
   reps: number;
   programExerciseId: string;
+}
+
+type Landmark = { x: number; y: number; z?: number; visibility?: number };
+type JointMode = "knee" | "elbow";
+
+const JOINTS: Record<JointMode, { right: [number, number, number]; left: [number, number, number]; down: number; up: number; label: string }> = {
+  knee: { right: [24, 26, 28], left: [23, 25, 27], down: 110, up: 160, label: "knee" },
+  elbow: { right: [12, 14, 16], left: [11, 13, 15], down: 70, up: 150, label: "elbow" },
+};
+
+const VISIBILITY_MIN = 1.8;
+const SWITCH_FRAMES = 15;
+const LANDMARK_SMOOTH_ALPHA = 0.22;
+const MIN_LANDMARK_VISIBILITY = 0.5;
+const LANDMARK_DEADZONE = 0.004;
+const ANGLE_SMOOTH_FRAMES = 6;
+
+function angleBetween(a: Landmark, b: Landmark, c: Landmark) {
+  const ab = { x: a.x - b.x, y: a.y - b.y };
+  const cb = { x: c.x - b.x, y: c.y - b.y };
+  const dot = ab.x * cb.x + ab.y * cb.y;
+  const magAb = Math.hypot(ab.x, ab.y);
+  const magCb = Math.hypot(cb.x, cb.y);
+  const cos = Math.min(1, Math.max(-1, dot / (magAb * magCb)));
+  return (Math.acos(cos) * 180) / Math.PI;
 }
 
 export default function SessionPage() {
@@ -32,6 +59,28 @@ export default function SessionPage() {
   const [active, setActive] = useState(false);
   const [completing, setCompleting] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const [cvEnabled, setCvEnabled] = useState(false);
+  const [cvLoading, setCvLoading] = useState(false);
+  const [cvStatus, setCvStatus] = useState("");
+  const [cvJoint, setCvJoint] = useState<JointMode | null>(null);
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const poseLandmarkerRef = useRef<PoseLandmarkerType | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const smoothedRef = useRef<(Landmark | null)[] | null>(null);
+  const angleHistoryRef = useRef<number[]>([]);
+  const jointRef = useRef<JointMode | null>(null);
+  const repStateRef = useRef<"up" | "down">("up");
+  const pendingModeRef = useRef<JointMode | null>(null);
+  const pendingCountRef = useRef(0);
+  const activeRef = useRef(active);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  useEffect(() => {
+    activeRef.current = active;
+  }, [active]);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -59,6 +108,249 @@ export default function SessionPage() {
     };
   }, [active]);
 
+  const registerRep = useCallback(
+    (targetReps: number) => {
+      setReps((r) => {
+        const next = r + 1;
+        if (next === targetReps) {
+          setFeedback("Goal reached! Keep going if you've got more in you, or tap ✓ to finish.");
+        } else if (next > targetReps) {
+          setFeedback("Bonus rep — nice. Tap ✓ whenever you're ready to finish.");
+        } else {
+          setFeedback(next % 5 === 0 ? "Great form! Keep that tempo." : "Good rep — control the movement.");
+        }
+        return next;
+      });
+      setFormScore((f) => Math.min(f + 1, 98));
+    },
+    []
+  );
+
+  function stopCameraTracking() {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    smoothedRef.current = null;
+    angleHistoryRef.current = [];
+    jointRef.current = null;
+    pendingModeRef.current = null;
+    pendingCountRef.current = 0;
+    setCvJoint(null);
+    setCvStatus("");
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+  }
+
+  function smoothLandmarks(raw: Landmark[]): (Landmark | null)[] {
+    if (!smoothedRef.current) {
+      smoothedRef.current = raw.map((p) => (p ? { ...p } : null));
+      return smoothedRef.current;
+    }
+    const smoothed = smoothedRef.current;
+    for (let i = 0; i < raw.length; i++) {
+      const r = raw[i];
+      const s = smoothed[i];
+      if (!r) continue;
+      const vis = r.visibility ?? 1;
+      if (!s || vis < MIN_LANDMARK_VISIBILITY) {
+        smoothed[i] = s ? { ...s, visibility: vis } : { ...r };
+        continue;
+      }
+      const dx = r.x - s.x;
+      const dy = r.y - s.y;
+      if (Math.hypot(dx, dy) < LANDMARK_DEADZONE) {
+        smoothed[i] = { ...s, visibility: vis };
+        continue;
+      }
+      smoothed[i] = {
+        x: s.x + dx * LANDMARK_SMOOTH_ALPHA,
+        y: s.y + dy * LANDMARK_SMOOTH_ALPHA,
+        z: (s.z ?? 0) + ((r.z ?? 0) - (s.z ?? 0)) * LANDMARK_SMOOTH_ALPHA,
+        visibility: vis,
+      };
+    }
+    return smoothed;
+  }
+
+  function sumVisibility(landmarks: (Landmark | null)[], ids: readonly number[]) {
+    return ids.reduce((s, idx) => s + (landmarks[idx]?.visibility ?? 0), 0);
+  }
+
+  function detectJoint(landmarks: (Landmark | null)[]) {
+    const kneeVis = Math.max(sumVisibility(landmarks, JOINTS.knee.right), sumVisibility(landmarks, JOINTS.knee.left));
+    const elbowVis = Math.max(sumVisibility(landmarks, JOINTS.elbow.right), sumVisibility(landmarks, JOINTS.elbow.left));
+
+    let candidate: JointMode | null = null;
+    if (kneeVis >= VISIBILITY_MIN && kneeVis >= elbowVis) candidate = "knee";
+    else if (elbowVis >= VISIBILITY_MIN) candidate = "elbow";
+
+    if (!candidate || candidate === jointRef.current) {
+      pendingModeRef.current = null;
+      pendingCountRef.current = 0;
+      if (!candidate && !jointRef.current) setCvStatus("Get your knee or elbow clearly in frame…");
+      return;
+    }
+
+    if (candidate === pendingModeRef.current) {
+      pendingCountRef.current++;
+    } else {
+      pendingModeRef.current = candidate;
+      pendingCountRef.current = 1;
+    }
+
+    if (pendingCountRef.current >= SWITCH_FRAMES) {
+      jointRef.current = candidate;
+      repStateRef.current = "up";
+      angleHistoryRef.current = [];
+      setCvJoint(candidate);
+      setCvStatus(`Tracking your ${JOINTS[candidate].label}`);
+      pendingModeRef.current = null;
+      pendingCountRef.current = 0;
+    }
+  }
+
+  function drawSkeleton(landmarks: (Landmark | null)[]) {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#00e5c7";
+    ctx.strokeStyle = "rgba(0,229,199,0.6)";
+    ctx.lineWidth = 3;
+    const CONNECTIONS: [number, number][] = [
+      [11, 13], [13, 15], [12, 14], [14, 16], [11, 12], [23, 24],
+      [11, 23], [12, 24], [23, 25], [25, 27], [24, 26], [26, 28],
+    ];
+    for (const [i, j] of CONNECTIONS) {
+      const p1 = landmarks[i];
+      const p2 = landmarks[j];
+      if (!p1 || !p2) continue;
+      ctx.beginPath();
+      ctx.moveTo(p1.x * canvas.width, p1.y * canvas.height);
+      ctx.lineTo(p2.x * canvas.width, p2.y * canvas.height);
+      ctx.stroke();
+    }
+    for (const idx of [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]) {
+      const p = landmarks[idx];
+      if (!p) continue;
+      ctx.beginPath();
+      ctx.arc(p.x * canvas.width, p.y * canvas.height, 5, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+  }
+
+  function processLandmarks(landmarks: (Landmark | null)[], targetReps: number) {
+    const joint = jointRef.current;
+    if (!joint) return;
+    const cfg = JOINTS[joint];
+    const rightVis = sumVisibility(landmarks, cfg.right);
+    const leftVis = sumVisibility(landmarks, cfg.left);
+    const [i1, i2, i3] = rightVis >= leftVis ? cfg.right : cfg.left;
+    const p1 = landmarks[i1];
+    const p2 = landmarks[i2];
+    const p3 = landmarks[i3];
+    if (!p1 || !p2 || !p3) return;
+
+    const raw = angleBetween(p1, p2, p3);
+    angleHistoryRef.current.push(raw);
+    if (angleHistoryRef.current.length > ANGLE_SMOOTH_FRAMES) angleHistoryRef.current.shift();
+    const angle = angleHistoryRef.current.reduce((s, v) => s + v, 0) / angleHistoryRef.current.length;
+
+    if (repStateRef.current === "up" && angle < cfg.down) {
+      repStateRef.current = "down";
+    } else if (repStateRef.current === "down" && angle > cfg.up) {
+      repStateRef.current = "up";
+      if (activeRef.current) registerRep(targetReps);
+    }
+  }
+
+  async function startCameraTracking(targetReps: number) {
+    setCvLoading(true);
+    setCvStatus("Loading pose model…");
+    try {
+      const { PoseLandmarker, FilesetResolver } = await import("@mediapipe/tasks-vision");
+      if (!poseLandmarkerRef.current) {
+        const filesetResolver = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        );
+        poseLandmarkerRef.current = await PoseLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath:
+              "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          numPoses: 1,
+        });
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 }, audio: false });
+      streamRef.current = stream;
+      const video = videoRef.current;
+      if (!video) return;
+      video.srcObject = stream;
+      await new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+      });
+      await video.play();
+      if (canvasRef.current) {
+        canvasRef.current.width = video.videoWidth;
+        canvasRef.current.height = video.videoHeight;
+      }
+
+      setCvEnabled(true);
+      setCvStatus("Get your knee or elbow clearly in frame…");
+      if (!activeRef.current) {
+        setActive(true);
+        setFeedback("Camera tracking on — bend and straighten to count reps automatically.");
+      }
+
+      const loop = () => {
+        const landmarker = poseLandmarkerRef.current;
+        const v = videoRef.current;
+        if (landmarker && v && v.readyState >= 2) {
+          const result = landmarker.detectForVideo(v, performance.now());
+          if (result.landmarks && result.landmarks[0]) {
+            const smoothed = smoothLandmarks(result.landmarks[0] as Landmark[]);
+            drawSkeleton(smoothed);
+            detectJoint(smoothed);
+            processLandmarks(smoothed, targetReps);
+          } else {
+            const ctx = canvasRef.current?.getContext("2d");
+            if (ctx && canvasRef.current) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+          }
+        }
+        rafRef.current = requestAnimationFrame(loop);
+      };
+      loop();
+    } catch (err) {
+      setCvStatus(err instanceof Error ? `Camera error: ${err.message}` : "Camera error");
+      setCvEnabled(false);
+    } finally {
+      setCvLoading(false);
+    }
+  }
+
+  function toggleCameraTracking() {
+    const targetReps = exercise ? exercise.sets * exercise.reps : 0;
+    if (cvEnabled) {
+      stopCameraTracking();
+      setCvEnabled(false);
+    } else {
+      startCameraTracking(targetReps);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      stopCameraTracking();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function completeSession() {
     const token = getStoredToken();
     if (!token || !exercise) return;
@@ -82,24 +374,13 @@ export default function SessionPage() {
     }
   }
 
-  function handleRep() {
+  function handleTap() {
     if (!active) {
       setFeedback("Press play to start tracking before counting reps.");
       return;
     }
     const targetReps = exercise ? exercise.sets * exercise.reps : 0;
-    setReps((r) => {
-      const next = r + 1;
-      if (next === targetReps) {
-        setFeedback("Goal reached! Keep going if you've got more in you, or tap ✓ to finish.");
-      } else if (next > targetReps) {
-        setFeedback("Bonus rep — nice. Tap ✓ whenever you're ready to finish.");
-      } else {
-        setFeedback(next % 5 === 0 ? "Great form! Keep that tempo." : "Good rep — control the movement.");
-      }
-      return next;
-    });
-    setFormScore((f) => Math.min(f + 1, 98));
+    registerRep(targetReps);
   }
 
   function resetSession() {
@@ -160,7 +441,14 @@ export default function SessionPage() {
             Goal: {exercise.sets} × {exercise.reps} ({targetReps} reps total)
           </Typography>
         </Box>
-        <BluetoothIcon sx={{ color: active ? "#00967d" : "#94a3b8", fontSize: 20 }} titleAccess="Sensor connection simulated" />
+        <IconButton
+          onClick={toggleCameraTracking}
+          disabled={cvLoading}
+          title={cvEnabled ? "Turn off camera tracking" : "Track reps automatically with your camera"}
+          sx={{ color: cvEnabled ? "#00967d" : "#94a3b8" }}
+        >
+          {cvEnabled ? <VideocamIcon fontSize="small" /> : <VideocamOffIcon fontSize="small" />}
+        </IconButton>
       </Box>
 
       <Box flex={1} display="flex" alignItems="center" justifyContent="center" position="relative" px={3}>
@@ -182,11 +470,12 @@ export default function SessionPage() {
         </Box>
 
         <Box
-          onClick={handleRep}
+          onClick={handleTap}
           sx={{
             width: 220,
             height: 220,
             borderRadius: "50%",
+            overflow: "hidden",
             background: active
               ? "radial-gradient(circle, rgba(0,229,199,0.15) 0%, transparent 70%)"
               : "radial-gradient(circle, rgba(0,229,199,0.08) 0%, transparent 70%)",
@@ -200,31 +489,71 @@ export default function SessionPage() {
             transition: "all 0.3s",
           }}
         >
-          {[0, 1, 2, 3, 4].map((i) => (
-            <Box
-              key={i}
-              sx={{
-                position: "absolute",
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                bgcolor: "#00e5c7",
-                boxShadow: "0 0 12px rgba(0,229,199,0.8)",
-                top: `${20 + i * 15}%`,
-                left: `${30 + (i % 2) * 40}%`,
-                animation: active ? "pulse-glow 2s ease-in-out infinite" : "none",
-                animationDelay: `${i * 0.2}s`,
-                opacity: active ? 1 : 0.4,
-              }}
-            />
-          ))}
-          <Typography variant="caption" color="text.secondary" textAlign="center">
-            {active ? "Tap to count rep" : "Press play to start"}
-            <br />
-            <Box component="span" sx={{ color: "#00967d", fontWeight: 600 }}>
-              {reps}/{targetReps} reps
-            </Box>
-          </Typography>
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              transform: "scaleX(-1)",
+              opacity: cvEnabled ? 1 : 0,
+            }}
+          />
+          <canvas
+            ref={canvasRef}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              transform: "scaleX(-1)",
+              opacity: cvEnabled ? 1 : 0,
+            }}
+          />
+          {!cvEnabled &&
+            [0, 1, 2, 3, 4].map((i) => (
+              <Box
+                key={i}
+                sx={{
+                  position: "absolute",
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  bgcolor: "#00e5c7",
+                  boxShadow: "0 0 12px rgba(0,229,199,0.8)",
+                  top: `${20 + i * 15}%`,
+                  left: `${30 + (i % 2) * 40}%`,
+                  animation: active ? "pulse-glow 2s ease-in-out infinite" : "none",
+                  animationDelay: `${i * 0.2}s`,
+                  opacity: active ? 1 : 0.4,
+                }}
+              />
+            ))}
+          <Box
+            sx={{
+              position: "relative",
+              zIndex: 1,
+              ...(cvEnabled && {
+                bgcolor: "rgba(255,255,255,0.85)",
+                borderRadius: 2,
+                px: 1.5,
+                py: 0.75,
+              }),
+            }}
+          >
+            <Typography variant="caption" color="text.secondary" textAlign="center" component="div">
+              {cvEnabled ? cvStatus || "Starting camera…" : active ? "Tap to count rep" : "Press play to start"}
+              <br />
+              <Box component="span" sx={{ color: "#00967d", fontWeight: 600 }}>
+                {reps}/{targetReps} reps
+              </Box>
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
