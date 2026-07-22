@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Typography, TextField, Alert } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { PainScoreSlider, DifficultyScoreSlider } from "@kinetik/ui";
@@ -10,20 +10,29 @@ import { PatientShell } from "@/components/PatientShell";
 import { GlassCard } from "@/components/GlassCard";
 
 export default function WorkoutCompletePage() {
+  return (
+    <Suspense fallback={null}>
+      <WorkoutCompleteForm />
+    </Suspense>
+  );
+}
+
+function WorkoutCompleteForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextExerciseId = searchParams.get("next");
   const [painScore, setPainScore] = useState(2);
   const [difficulty, setDifficulty] = useState(5);
   const [comments, setComments] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<"continue" | "finish" | null>(null);
   const [error, setError] = useState("");
 
-  async function handleSubmit() {
+  async function submitFeedback() {
     const token = getStoredToken();
     if (!token) {
       router.push("/login");
-      return;
+      return false;
     }
-    setLoading(true);
     setError("");
     try {
       await api("/patient/workout-feedback", {
@@ -31,12 +40,29 @@ export default function WorkoutCompletePage() {
         token,
         body: JSON.stringify({ painScore, difficulty, comments: comments || undefined }),
       });
-      router.push("/patient");
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit feedback");
-    } finally {
-      setLoading(false);
+      return false;
     }
+  }
+
+  async function handleContinue() {
+    setLoading("continue");
+    const ok = await submitFeedback();
+    setLoading(null);
+    if (ok) router.push(`/patient/session/${nextExerciseId}`);
+  }
+
+  async function handleFinish() {
+    setLoading("finish");
+    const ok = await submitFeedback();
+    setLoading(null);
+    if (ok) router.push("/patient");
+  }
+
+  function handleSkip() {
+    router.push(nextExerciseId ? `/patient/session/${nextExerciseId}` : "/patient");
   }
 
   return (
@@ -75,17 +101,35 @@ export default function WorkoutCompletePage() {
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-      <Button variant="contained" fullWidth size="large" onClick={handleSubmit} disabled={loading}>
-        {loading ? "Saving..." : "Submit Feedback"}
-      </Button>
+      {nextExerciseId ? (
+        <>
+          <Button variant="contained" fullWidth size="large" onClick={handleContinue} disabled={loading !== null}>
+            {loading === "continue" ? "Saving..." : "Submit & Continue to Next Exercise"}
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            size="large"
+            sx={{ mt: 1.5 }}
+            onClick={handleFinish}
+            disabled={loading !== null}
+          >
+            {loading === "finish" ? "Saving..." : "Submit & Finish for Today"}
+          </Button>
+        </>
+      ) : (
+        <Button variant="contained" fullWidth size="large" onClick={handleFinish} disabled={loading !== null}>
+          {loading === "finish" ? "Saving..." : "Submit Feedback"}
+        </Button>
+      )}
       <Button
         fullWidth
         size="large"
         sx={{ mt: 1, color: "text.secondary" }}
-        onClick={() => router.push("/patient")}
-        disabled={loading}
+        onClick={handleSkip}
+        disabled={loading !== null}
       >
-        Skip for now
+        {nextExerciseId ? "Skip review, next exercise" : "Skip for now"}
       </Button>
     </PatientShell>
   );

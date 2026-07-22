@@ -51,6 +51,7 @@ export default function SessionPage() {
   const params = useParams();
   const programExerciseId = params.id as string;
   const [exercise, setExercise] = useState<ExerciseInfo | null>(null);
+  const [nextExerciseId, setNextExerciseId] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [reps, setReps] = useState(0);
   const [seconds, setSeconds] = useState(0);
@@ -91,9 +92,14 @@ export default function SessionPage() {
     }
     api<{ todaysProgram: { exercises: ExerciseInfo[] } }>("/patient/dashboard", { token })
       .then((d) => {
-        const ex = d.todaysProgram?.exercises.find((e) => e.programExerciseId === programExerciseId);
-        if (ex) setExercise(ex);
-        else setNotFound(true);
+        const exercises = d.todaysProgram?.exercises ?? [];
+        const index = exercises.findIndex((e) => e.programExerciseId === programExerciseId);
+        if (index === -1) {
+          setNotFound(true);
+          return;
+        }
+        setExercise(exercises[index]);
+        setNextExerciseId(exercises[index + 1]?.programExerciseId ?? null);
       })
       .catch(() => setNotFound(true));
   }, [router, programExerciseId]);
@@ -376,7 +382,7 @@ export default function SessionPage() {
           formScore,
         }),
       });
-      router.push("/patient");
+      router.push(nextExerciseId ? `/patient/workout-complete?next=${nextExerciseId}` : "/patient/workout-complete");
     } catch {
       setFeedback("Failed to save session — try again.");
       setCompleting(false);
@@ -513,6 +519,7 @@ export default function SessionPage() {
               objectFit: "cover",
               transform: "scaleX(-1)",
               opacity: cvEnabled ? 1 : 0,
+              pointerEvents: "none",
             }}
           />
           <canvas
@@ -524,6 +531,7 @@ export default function SessionPage() {
               height: "100%",
               transform: "scaleX(-1)",
               opacity: cvEnabled ? 1 : 0,
+              pointerEvents: "none",
             }}
           />
           {!cvEnabled &&
