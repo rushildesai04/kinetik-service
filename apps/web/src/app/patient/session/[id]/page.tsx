@@ -77,6 +77,7 @@ export default function SessionPage() {
   const pendingCountRef = useRef(0);
   const activeRef = useRef(active);
   const streamRef = useRef<MediaStream | null>(null);
+  const autoStartedRef = useRef(false);
 
   useEffect(() => {
     activeRef.current = active;
@@ -351,6 +352,14 @@ export default function SessionPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (exercise && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      startCameraTracking(exercise.sets * exercise.reps);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercise]);
+
   async function completeSession() {
     const token = getStoredToken();
     if (!token || !exercise) return;
@@ -457,10 +466,11 @@ export default function SessionPage() {
             position: "absolute",
             top: 16,
             right: 16,
+            zIndex: 2,
             px: 1.5,
             py: 1,
             borderRadius: 2,
-            bgcolor: "rgba(15,23,42,0.03)",
+            bgcolor: "rgba(255,255,255,0.85)",
             border: "1px solid rgba(15,23,42,0.08)",
           }}
         >
@@ -472,9 +482,10 @@ export default function SessionPage() {
         <Box
           onClick={handleTap}
           sx={{
-            width: 220,
-            height: 220,
-            borderRadius: "50%",
+            width: "100%",
+            maxWidth: 420,
+            aspectRatio: "1",
+            borderRadius: "28px",
             overflow: "hidden",
             background: active
               ? "radial-gradient(circle, rgba(0,229,199,0.15) 0%, transparent 70%)"
