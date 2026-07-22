@@ -61,6 +61,12 @@ interface PatientDetail {
     repsCompleted: number;
     formScore?: number;
     painDuring?: number;
+    feedback: {
+      painScore: number;
+      difficulty: number;
+      comments?: string;
+      submittedAt: string;
+    } | null;
   }>;
   recentWorkoutFeedback: Array<{
     id: string;
@@ -284,7 +290,7 @@ export default function PatientDetailPage() {
                 ) : (
                   <List dense>
                     {data.recentSessions.map((s) => (
-                      <ListItem key={s.id} disableGutters>
+                      <ListItem key={s.id} disableGutters alignItems="flex-start" sx={{ display: "block", mb: 1.5 }}>
                         <ListItemText
                           primary={
                             <Box display="flex" justifyContent="space-between" gap={1}>
@@ -308,6 +314,27 @@ export default function PatientDetailPage() {
                             (s.painDuring != null ? ` · pain ${s.painDuring}/10` : "")
                           }
                         />
+                        {s.feedback && (
+                          <Box
+                            sx={{
+                              mt: 0.75,
+                              ml: 0,
+                              p: 1.25,
+                              borderRadius: 1.5,
+                              bgcolor: "rgba(0,184,154,0.06)",
+                              border: "1px solid rgba(0,184,154,0.15)",
+                            }}
+                          >
+                            <Typography variant="caption" fontWeight={600} color="primary" display="block">
+                              Patient feedback: Pain {s.feedback.painScore}/10 · Difficulty {s.feedback.difficulty}/10
+                            </Typography>
+                            {s.feedback.comments && (
+                              <Typography variant="caption" color="text.secondary">
+                                &ldquo;{s.feedback.comments}&rdquo;
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
                       </ListItem>
                     ))}
                   </List>
@@ -320,11 +347,11 @@ export default function PatientDetailPage() {
             <Card>
               <CardContent>
                 <Typography variant="subtitle1" fontWeight={600} mb={2}>
-                  Post-Workout Feedback
+                  General Feedback
                 </Typography>
                 {data.recentWorkoutFeedback.length === 0 ? (
                   <Typography color="text.secondary" variant="body2">
-                    No post-workout feedback submitted yet
+                    No general feedback submitted yet
                   </Typography>
                 ) : (
                   <List dense>

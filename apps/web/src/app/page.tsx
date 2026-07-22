@@ -79,11 +79,11 @@ export default function LandingPage() {
             recovery coach with clinical-grade accountability.
           </Typography>
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="center">
-            <Button component={Link} href="/onboard" variant="contained" size="large" sx={{ px: 4, py: 1.5 }}>
-              Activate with Clinician Code
-            </Button>
-            <Button component={Link} href="/login" variant="outlined" size="large" sx={{ px: 4, py: 1.5 }}>
+            <Button component={Link} href="/login" variant="contained" size="large" sx={{ px: 4, py: 1.5 }}>
               Sign In
+            </Button>
+            <Button component={Link} href="/onboard" variant="outlined" size="large" sx={{ px: 4, py: 1.5 }}>
+              Activate with Clinician Code
             </Button>
           </Stack>
         </Box>

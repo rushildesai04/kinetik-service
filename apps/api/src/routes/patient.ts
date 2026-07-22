@@ -35,6 +35,7 @@ const workoutFeedbackSchema = z.object({
   painScore: z.number().min(0).max(10),
   difficulty: z.number().min(0).max(10),
   comments: z.string().max(1000).optional(),
+  exerciseSessionId: z.string().optional(),
 });
 
 async function buildDashboard(profileId: string) {
@@ -278,6 +279,7 @@ export async function patientRoutes(app: FastifyInstance) {
         painScore: body.data.painScore,
         difficulty: body.data.difficulty,
         comments: body.data.comments,
+        exerciseSessionId: body.data.exerciseSessionId,
       },
     });
 

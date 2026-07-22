@@ -179,6 +179,7 @@ model ExerciseSession {
 
   patient         PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
   programExercise ProgramExercise @relation(fields: [programExerciseId], references: [id])
+  workoutFeedback WorkoutFeedback[]
 }
 
 // ─── Return-to-Play Readiness ─────────────────────────────────────────────
@@ -217,14 +218,16 @@ model ReadinessScore {
 // ─── Post-Workout Feedback ───────────────────────────────────────────────
 
 model WorkoutFeedback {
-  id          String   @id @default(cuid())
-  patientId   String
-  painScore   Int      // 0-10, pain during/after the workout
-  difficulty  Int      // 0-10, perceived difficulty
-  comments    String?
-  submittedAt DateTime @default(now())
+  id                String   @id @default(cuid())
+  patientId         String
+  exerciseSessionId String?  // links feedback to the exercise it followed, when known
+  painScore         Int      // 0-10, pain during/after the workout
+  difficulty        Int      // 0-10, perceived difficulty
+  comments          String?
+  submittedAt       DateTime @default(now())
 
-  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient         PatientProfile   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  exerciseSession ExerciseSession? @relation(fields: [exerciseSessionId], references: [id])
 }
 
 // ─── Clinician Alerts (low-burden visibility) ───────────────────────────

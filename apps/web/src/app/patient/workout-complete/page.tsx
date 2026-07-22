@@ -21,6 +21,7 @@ function WorkoutCompleteForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextExerciseId = searchParams.get("next");
+  const sessionId = searchParams.get("sessionId");
   const [painScore, setPainScore] = useState(2);
   const [difficulty, setDifficulty] = useState(5);
   const [comments, setComments] = useState("");
@@ -38,7 +39,12 @@ function WorkoutCompleteForm() {
       await api("/patient/workout-feedback", {
         method: "POST",
         token,
-        body: JSON.stringify({ painScore, difficulty, comments: comments || undefined }),
+        body: JSON.stringify({
+          painScore,
+          difficulty,
+          comments: comments || undefined,
+          exerciseSessionId: sessionId || undefined,
+        }),
       });
       return true;
     } catch (err) {

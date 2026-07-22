@@ -371,7 +371,7 @@ export default function SessionPage() {
     if (!token || !exercise) return;
     setCompleting(true);
     try {
-      await api("/patient/sessions", {
+      const session = await api<{ id: string }>("/patient/sessions", {
         method: "POST",
         token,
         body: JSON.stringify({
@@ -382,7 +382,9 @@ export default function SessionPage() {
           formScore,
         }),
       });
-      router.push(nextExerciseId ? `/patient/workout-complete?next=${nextExerciseId}` : "/patient/workout-complete");
+      const params = new URLSearchParams({ sessionId: session.id });
+      if (nextExerciseId) params.set("next", nextExerciseId);
+      router.push(`/patient/workout-complete?${params.toString()}`);
     } catch {
       setFeedback("Failed to save session — try again.");
       setCompleting(false);

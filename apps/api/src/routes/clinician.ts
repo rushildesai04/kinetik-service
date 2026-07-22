@@ -108,9 +108,12 @@ export async function clinicianRoutes(app: FastifyInstance) {
         sessionLogs: {
           orderBy: { completedAt: "desc" },
           take: 15,
-          include: { programExercise: { include: { exercise: true } } },
+          include: {
+            programExercise: { include: { exercise: true } },
+            workoutFeedback: true,
+          },
         },
-        workoutFeedback: { orderBy: { submittedAt: "desc" }, take: 10 },
+        workoutFeedback: { where: { exerciseSessionId: null }, orderBy: { submittedAt: "desc" }, take: 10 },
       },
     });
 
@@ -165,6 +168,14 @@ export async function clinicianRoutes(app: FastifyInstance) {
           repsCompleted: s.repsCompleted,
           formScore: s.formScore,
           painDuring: s.painDuring,
+          feedback: s.workoutFeedback[0]
+            ? {
+                painScore: s.workoutFeedback[0].painScore,
+                difficulty: s.workoutFeedback[0].difficulty,
+                comments: s.workoutFeedback[0].comments,
+                submittedAt: s.workoutFeedback[0].submittedAt.toISOString(),
+              }
+            : null,
         })),
         recentWorkoutFeedback: patient.workoutFeedback.map((f) => ({
           id: f.id,
