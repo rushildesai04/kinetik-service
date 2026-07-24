@@ -4,6 +4,7 @@ import jwt from "@fastify/jwt";
 import { authRoutes } from "./routes/auth.js";
 import { patientRoutes } from "./routes/patient.js";
 import { clinicianRoutes } from "./routes/clinician.js";
+import { payerRoutes } from "./routes/payer.js";
 import { requireAuth } from "./plugins/auth.js";
 import "./plugins/auth.js";
 
@@ -23,6 +24,7 @@ async function main() {
   await app.register(authRoutes, { prefix: "/auth" });
   await app.register(patientRoutes, { prefix: "/patient" });
   await app.register(clinicianRoutes, { prefix: "/clinician" });
+  await app.register(payerRoutes, { prefix: "/payer" });
 
   await app.listen({ port: PORT, host: "0.0.0.0" });
   console.log(`Kinetik API running on http://localhost:${PORT}`);

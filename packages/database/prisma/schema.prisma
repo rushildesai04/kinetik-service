@@ -13,6 +13,7 @@ enum UserRole {
   PATIENT
   CLINICIAN
   CLINIC_ADMIN
+  PAYER
 }
 
 enum RecoveryPhase {
@@ -35,9 +36,12 @@ model Clinic {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users     User[]
-  patients  PatientProfile[]
-  exercises Exercise[]
+  users          User[]
+  patients       PatientProfile[]
+  exercises      Exercise[]
+  subscription   ClinicSubscription?
+  ehrConnections EhrConnection[]
+  devices        Device[]
 }
 
 model User {
@@ -51,9 +55,13 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  clinic         Clinic?         @relation(fields: [clinicId], references: [id])
-  patientProfile PatientProfile?
+  clinic           Clinic?           @relation(fields: [clinicId], references: [id])
+  patientProfile   PatientProfile?
   clinicianProfile ClinicianProfile?
+  payerProfile     PayerProfile?
+  xpEvents         XpEvent[]
+  achievements     Achievement[]
+  chatMessages     ChatMessage[]
 }
 
 model ClinicianProfile {
@@ -95,6 +103,12 @@ model PatientProfile {
   sessionLogs       ExerciseSession[]
   alerts            Alert[]
   workoutFeedback   WorkoutFeedback[]
+  clinicianNotes    ClinicianNote[]
+  rtmEnrollment     RtmEnrollment?
+  devices           Device[]
+  sensorSessions    SensorSession[]
+  xpTotal           Int              @default(0)
+  level             Int              @default(1)
 }
 
 // ─── Daily Accountability ──────────────────────────────────────────────────
@@ -251,4 +265,247 @@ model Alert {
   createdAt DateTime      @default(now())
 
   patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─── Gamified Recovery ───────────────────────────────────────────────────
+
+model XpEvent {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  userId      String
+  code        String
+  title       String
+  description String
+  earnedAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, code])
+}
+
+// ─── AI Support Chat History ─────────────────────────────────────────────
+
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  role      String   // "user" | "ai"
+  text      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Clinician Notes & Clinical Workflow ─────────────────────────────────
+
+model ClinicianNote {
+  id        String   @id @default(cuid())
+  patientId String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+}
+
+// ─── RTM Billing Engine (CPT 98975–98981) ────────────────────────────────
+
+enum RtmStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+model RtmEnrollment {
+  id              String    @id @default(cuid())
+  patientId       String    @unique
+  enrolledAt      DateTime  @default(now())
+  status          RtmStatus @default(ACTIVE)
+  billingCodeBase String    @default("98975") // setup / education
+  targetMinutes   Int       @default(20)      // monthly interactive minutes
+
+  patient        PatientProfile    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  dayLogs        RtmDayLog[]
+  communications RtmCommunication[]
+  claimExports   RtmClaimExport[]
+}
+
+model RtmDayLog {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  date         DateTime @db.Date
+  hasData      Boolean  @default(true) // transmission / recorded data day
+  minutes      Int      @default(0)
+  source       String   @default("session") // session | check_in | sensor | clinician
+
+  enrollment RtmEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, date])
+}
+
+model RtmCommunication {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  minutes      Int
+  note         String?
+  occurredAt   DateTime @default(now())
+
+  enrollment RtmEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+}
+
+model RtmClaimExport {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  periodStart  DateTime @db.Date
+  periodEnd    DateTime @db.Date
+  cptCodes     String[] // e.g. ["98975","98977","98980"]
+  dataDays     Int
+  totalMinutes Int
+  payload      Json
+  createdAt    DateTime @default(now())
+
+  enrollment RtmEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+}
+
+// ─── EHR / PMS Integrations ──────────────────────────────────────────────
+
+enum EhrVendor {
+  EPIC
+  ATHENA
+  PRACTICE_FUSION
+  WEBPT
+  OTHER
+}
+
+enum EhrConnectionStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  PENDING
+}
+
+model EhrConnection {
+  id           String              @id @default(cuid())
+  clinicId     String
+  vendor       EhrVendor
+  status       EhrConnectionStatus @default(PENDING)
+  externalOrgId String?
+  connectedAt  DateTime?
+  lastSyncAt   DateTime?
+  metadata     Json?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, vendor])
+}
+
+// ─── Clinic SaaS Subscription ($80/patient/month) ────────────────────────
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+model ClinicSubscription {
+  id               String             @id @default(cuid())
+  clinicId         String             @unique
+  status           SubscriptionStatus @default(TRIAL)
+  pricePerPatient  Int                @default(80) // USD
+  activeSeats      Int                @default(0)
+  billingEmail     String?
+  currentPeriodEnd DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+// ─── Payer Stakeholder ───────────────────────────────────────────────────
+
+model PayerOrganization {
+  id        String   @id @default(cuid())
+  name      String
+  region    String?  // e.g. "California"
+  createdAt DateTime @default(now())
+
+  profiles PayerProfile[]
+}
+
+model PayerProfile {
+  id         String @id @default(cuid())
+  userId     String @unique
+  payerOrgId String
+  title      String?
+
+  user     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payerOrg PayerOrganization @relation(fields: [payerOrgId], references: [id], onDelete: Cascade)
+}
+
+// ─── EMG + IMU Device / Sensor Data Plane ────────────────────────────────
+
+enum DeviceType {
+  EMG_BAND
+  IMU
+  COMBINED
+  CAMERA_ONLY
+}
+
+enum DeviceStatus {
+  PAIRED
+  ACTIVE
+  INACTIVE
+  RETIRED
+}
+
+model Device {
+  id           String       @id @default(cuid())
+  clinicId     String?
+  patientId    String?
+  type         DeviceType
+  status       DeviceStatus @default(PAIRED)
+  serialNumber String       @unique
+  label        String?
+  pairedAt     DateTime     @default(now())
+  lastSeenAt   DateTime?
+
+  clinic   Clinic?         @relation(fields: [clinicId], references: [id])
+  patient  PatientProfile? @relation(fields: [patientId], references: [id])
+  sessions SensorSession[]
+}
+
+model SensorSession {
+  id          String   @id @default(cuid())
+  deviceId    String
+  patientId   String
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  exerciseName String?
+  summary     Json?    // aggregated EMG RMS, IMU ROM, etc.
+
+  device  Device         @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  samples SensorSample[]
+}
+
+model SensorSample {
+  id        String   @id @default(cuid())
+  sessionId String
+  recordedAt DateTime @default(now())
+  channel   String   // e.g. "emg_ch1", "imu_accel", "imu_gyro"
+  value     Float
+  unit      String   // "mV", "g", "deg/s"
+
+  session SensorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }

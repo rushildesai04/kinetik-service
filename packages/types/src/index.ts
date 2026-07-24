@@ -1,6 +1,6 @@
 // ─── Auth ────────────────────────────────────────────────────────────────
 
-export type UserRole = "PATIENT" | "CLINICIAN" | "CLINIC_ADMIN";
+export type UserRole = "PATIENT" | "CLINICIAN" | "CLINIC_ADMIN" | "PAYER";
 
 export interface AuthUser {
   id: string;
