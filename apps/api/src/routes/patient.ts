@@ -9,6 +9,9 @@ import {
   rankFromAdherence,
 } from "../services/program.js";
 import { generateSupportReply } from "../services/support.js";
+import { awardXp, getGamification } from "../services/gamification.js";
+import { logRtmDay, ensureRtmEnrollment } from "../services/rtm.js";
+import { adaptProgramForPatient } from "../services/adaptive.js";
 
 const checkInSchema = z.object({
   painScore: z.number().min(0).max(10),
@@ -232,8 +235,11 @@ export async function patientRoutes(app: FastifyInstance) {
     }
 
     await calculateReadiness(profile.id);
+    await ensureRtmEnrollment(profile.id);
+    await logRtmDay(profile.id, { minutes: 2, source: "check_in" });
+    const gamification = await awardXp(id, 25, "daily check-in");
 
-    return { data: checkIn };
+    return { data: { ...checkIn, gamification } };
   });
 
   app.post("/sessions", async (request, reply) => {
@@ -260,7 +266,22 @@ export async function patientRoutes(app: FastifyInstance) {
     });
 
     await calculateReadiness(profile.id);
-    return reply.status(201).send({ data: session });
+    const minutes = Math.max(5, Math.round((body.data.durationSeconds ?? 300) / 60));
+    await logRtmDay(profile.id, { minutes, source: "session" });
+    const gamification = await awardXp(id, 50, "exercise session completed");
+
+    if (body.data.formScore != null && body.data.formScore < 60) {
+      await prisma.alert.create({
+        data: {
+          patientId: profile.id,
+          type: "FORM_DEGRADATION",
+          severity: "WARNING",
+          message: `Form score dropped to ${Math.round(body.data.formScore)}% during session`,
+        },
+      });
+    }
+
+    return reply.status(201).send({ data: { ...session, gamification } });
   });
 
   app.post("/workout-feedback", async (request, reply) => {
@@ -294,7 +315,10 @@ export async function patientRoutes(app: FastifyInstance) {
       });
     }
 
-    return reply.status(201).send({ data: feedback });
+    const adaptation = await adaptProgramForPatient(profile.id);
+    await awardXp(id, 15, "workout feedback submitted");
+
+    return reply.status(201).send({ data: { ...feedback, adaptation } });
   });
 
   app.get("/readiness", async (request, reply) => {
@@ -395,5 +419,127 @@ export async function patientRoutes(app: FastifyInstance) {
     };
 
     return { data: report };
+  });
+
+  app.get("/gamification", async (request, reply) => {
+    const { id, role } = request.user as { id: string; role: string };
+    if (role !== "PATIENT") return reply.status(403).send({ error: "Patients only" });
+    const data = await getGamification(id);
+    if (!data) return reply.status(404).send({ error: "Profile not found" });
+    return { data };
+  });
+
+  app.get("/surveys", async (request, reply) => {
+    const { id, role } = request.user as { id: string; role: string };
+    if (role !== "PATIENT") return reply.status(403).send({ error: "Patients only" });
+    const profile = await prisma.patientProfile.findUnique({ where: { userId: id } });
+    if (!profile) return reply.status(404).send({ error: "Profile not found" });
+    const surveys = await prisma.outcomeSurvey.findMany({
+      where: { patientId: profile.id },
+      orderBy: { completedAt: "desc" },
+    });
+    return { data: surveys };
+  });
+
+  app.post("/surveys", async (request, reply) => {
+    const { id, role } = request.user as { id: string; role: string };
+    if (role !== "PATIENT") return reply.status(403).send({ error: "Patients only" });
+    const schema = z.object({
+      surveyType: z.enum(["KOOS", "IKDC", "CUSTOM"]),
+      scores: z.record(z.number()),
+    });
+    const body = schema.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: body.error.flatten() });
+
+    const profile = await prisma.patientProfile.findUnique({ where: { userId: id } });
+    if (!profile) return reply.status(404).send({ error: "Profile not found" });
+
+    const values = Object.values(body.data.scores);
+    const totalScore = values.length
+      ? (values.reduce((a, b) => a + b, 0) / values.length) * 10
+      : 0;
+
+    const survey = await prisma.outcomeSurvey.create({
+      data: {
+        patientId: profile.id,
+        surveyType: body.data.surveyType,
+        scores: body.data.scores,
+        totalScore: Math.min(100, totalScore),
+      },
+    });
+
+    await calculateReadiness(profile.id);
+    await awardXp(id, 75, `${body.data.surveyType} outcome survey`);
+    await logRtmDay(profile.id, { minutes: 5, source: "survey" });
+
+    return reply.status(201).send({ data: survey });
+  });
+
+  app.get("/devices", async (request, reply) => {
+    const { id, role } = request.user as { id: string; role: string };
+    if (role !== "PATIENT") return reply.status(403).send({ error: "Patients only" });
+    const profile = await prisma.patientProfile.findUnique({ where: { userId: id } });
+    if (!profile) return reply.status(404).send({ error: "Profile not found" });
+    const devices = await prisma.device.findMany({
+      where: { patientId: profile.id },
+      include: { sessions: { orderBy: { startedAt: "desc" }, take: 3 } },
+    });
+    return { data: devices };
+  });
+
+  app.post("/devices/pair", async (request, reply) => {
+    const { id, role } = request.user as { id: string; role: string };
+    if (role !== "PATIENT") return reply.status(403).send({ error: "Patients only" });
+    const schema = z.object({
+      type: z.enum(["EMG_BAND", "IMU", "COMBINED", "CAMERA_ONLY"]),
+      label: z.string().optional(),
+    });
+    const body = schema.safeParse(request.body);
+    if (!body.success) return reply.status(400).send({ error: body.error.flatten() });
+
+    const profile = await prisma.patientProfile.findUnique({ where: { userId: id } });
+    if (!profile) return reply.status(404).send({ error: "Profile not found" });
+
+    const serial = `KIN-${body.data.type.slice(0, 3)}-${Date.now().toString(36).toUpperCase()}`;
+    const device = await prisma.device.create({
+      data: {
+        patientId: profile.id,
+        clinicId: profile.clinicId,
+        type: body.data.type,
+        status: "ACTIVE",
+        serialNumber: serial,
+        label: body.data.label ?? `Kinetik ${body.data.type.replace(/_/g, " ")}`,
+        lastSeenAt: new Date(),
+      },
+    });
+
+    // Seed a demo sensor session so dashboards aren't empty
+    const session = await prisma.sensorSession.create({
+      data: {
+        deviceId: device.id,
+        patientId: profile.id,
+        exerciseName: "Baseline calibration",
+        endedAt: new Date(),
+        summary: {
+          emgRmsMv: 0.42,
+          imuPeakRomDeg: 68,
+          samples: 120,
+          quality: "good",
+        },
+        samples: {
+          create: [
+            { channel: "emg_ch1", value: 0.38, unit: "mV" },
+            { channel: "emg_ch1", value: 0.45, unit: "mV" },
+            { channel: "imu_gyro", value: 12.4, unit: "deg/s" },
+            { channel: "imu_accel", value: 0.98, unit: "g" },
+          ],
+        },
+      },
+    });
+
+    await logRtmDay(profile.id, { minutes: 3, source: "sensor" });
+    await awardXp(id, 40, "device paired");
+
+    return reply.status(201).send({ data: { device, session } });
   });
 }

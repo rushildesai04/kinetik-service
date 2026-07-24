@@ -49,7 +49,9 @@ export default function LoginPage() {
         { method: "POST", body: JSON.stringify({ email, password }) }
       );
       storeAuth(result.token, result.user);
-      router.push(result.user.role === "PATIENT" ? "/patient" : "/clinician");
+      if (result.user.role === "PATIENT") router.push("/patient");
+      else if (result.user.role === "PAYER") router.push("/payer");
+      else router.push("/clinician");
     } catch (err) {
       setError(formatApiError(err));
     } finally {
